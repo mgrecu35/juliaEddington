@@ -43,4 +43,24 @@ def readCMB(fname): # reads relevant data from the CMB file
     lat=fh_cmb["KuKaGMI/Latitude"][:,:]
     return qv,press,envNodes,airTemp,skTemp,binNodes,pwc,sfcEmiss,dm,cldw,sfcBin,zCorrected,pType,lon,lat
 
+def readGMI(fname):
+    nc_gmi=nc.Dataset(fname)
+    gmi_lat=nc_gmi["S1/Latitude"][:,:]
+    gmi_lon=nc_gmi["S1/Longitude"][:,:]
+    gmi_tc=nc_gmi["S1/Tc"][:,:]
+    return gmi_lat, gmi_lon, gmi_tc
+
+from pyresample import geometry, image, kd_tree
+from pyresample.kd_tree import resample_custom
+
+wf = lambda r: 1 - r/20000.0
+
+def resample_gmi(gmi_lat, gmi_lon, gmi_tc, lon, lat):
+    # define the GMI grid
+    input_def = geometry.SwathDefinition(lons=gmi_lon[:,:], lats=gmi_lat[:,:])
+    output_def = geometry.SwathDefinition(lons=lon, lats=lat)
+# Resample the tb_s1 data to the CMB grid using gaussian resampling
+
+    gmi_tc_resampled = resample_custom(input_def, gmi_tc[:,:,:], output_def, radius_of_influence=30000, neighbours=10, weight_funcs=[wf for k in range(9)], fill_value=None)
+    return gmi_tc_resampled
 import radtran as rt
